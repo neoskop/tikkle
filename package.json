@@ -1,0 +1,48 @@
+{
+  "name": "@neoskop/tikkle",
+  "version": "0.0.0",
+  "description": "The missing link between tickspot and toggle",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neoskop/tikkle"
+  },
+  "bugs": {
+    "url": "https://github.com/neoskop/tikkle/issues"
+  },
+  "scripts": {
+    "prebuild": "yarn test",
+    "build": "tsc",
+    "test": "jest --reporters jest-spec-reporter",
+    "test:watch": "jest --watch --reporters jest-spec-reporter",
+    "test:cov": "jest --coverage --reporters jest-spec-reporter --coverage-reporters html --coverage-reporters lcov",
+    "test:debug": "node --inspect-brk -r ts-node/register node_modules/.bin/jest --runInBand",
+    "coveralls": "cat coverage/lcov.info | coveralls",
+    "publish-next": "npm run build && npm publish --tag next",
+    "publish-latest-only": "npm run build && npm publish",
+    "publish-latest": "npm run publish-latest-only && npm dist-tag add @neoskop/tikkle@`jq '.version' package.json -r` next"
+  },
+  "author": "Mark Wecke <wecke@neoskop.de>",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "bin": {
+    "tikkle": "bin/tikkle.js"
+  },
+  "typings": "dist/index.d.ts",
+  "devDependencies": {
+    "@types/jest": "24.0.17",
+    "@types/yargs": "13.0.2",
+    "coveralls": "3.0.6",
+    "jest": "24.8.0",
+    "jest-spec-reporter": "1.0.6",
+    "ts-jest": "24.0.2",
+    "ts-node": "8.3.0",
+    "typescript": "3.5.3"
+  },
+  "dependencies": {
+    "@types/ioredis": "4.0.13",
+    "ioredis": "4.14.0",
+    "rxjs": "6.5.2",
+    "tslib": "1.10.0",
+    "yargs": "13.3.0"
+  }
+}
