@@ -1,11 +1,11 @@
 # @neoskop/tikkle
 
-
 The missing link between tickspot and toggle
 
 ## Usage
 
-*comming soon*
+`tikkle init` to enter/update credentials and client/project selection.  
+`tikkle setup` to create the clients/projects in Toggle.  
 
 ## Testing
 
