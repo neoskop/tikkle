@@ -1,4 +1,5 @@
 import Axios from 'axios';
+import * as qs from 'querystring';
 
 export interface ToggleClient {
     id: number;
@@ -18,6 +19,20 @@ export interface ToggleProject {
     cid: number;
     wid: number;
     name: string;
+}
+
+export interface ToggleTimeEntry {
+    id: number;
+    wid: number;
+    pid?: number;
+    billable: boolean,
+    start: string;
+    stop: string;
+    duration: number;
+    description: string;
+    tags?: string[]
+    at: string;
+    duronly: boolean;
 }
 
 interface ToggleResponse<T> {
@@ -55,12 +70,24 @@ export class ToggleApi {
         return this.request<ToggleProject[]>('GET', `clients/${clientId}/projects`);
     }
 
+    getProjects() : Promise<ToggleProject[]> {
+        return this.request<ToggleProject[]>('GET', 'projects');
+    }
+
     async deleteProject(projectId: string | number) : Promise<void> {
         await this.request('DELETE', `projects/${projectId}`);
     }
 
     async deleteClient(clientId: string | number) : Promise<void> {
         await this.request('DELETE', `clients/${clientId}`);
+    }
+
+    getTimeEntries({ start, end } : { start?: string|Date, end?: string|Date } = {}) : Promise<ToggleTimeEntry[]> {
+        const query = qs.stringify({
+            start_date: start instanceof Date ? start.toISOString() : start,
+            end_date: end instanceof Date ? end.toISOString() : end
+        })
+        return this.request<ToggleTimeEntry[]>('GET', `time_entries?${query}`);
     }
 
     async createClient({ name, notes, wid = this.wid }: { name: string, notes?: string; wid?: number }) : Promise<ToggleClient> {

@@ -12,6 +12,10 @@ export interface IConfiguration {
     toggle: {
         token: string;
         workspace: number;
+    };
+    settings: {
+        rounding: number;
+        roundUpBy: number
     }
 }
 

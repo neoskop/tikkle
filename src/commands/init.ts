@@ -156,6 +156,10 @@ export class Init implements ICommand {
             toggle: {
                 token,
                 workspace
+            },
+            settings: {
+                rounding: 900,
+                roundUpBy: .333
             }
         }
 
