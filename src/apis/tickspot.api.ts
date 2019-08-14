@@ -1,6 +1,8 @@
 import Axios from 'axios';
 import * as qs from 'querystring';
 
+import { Cache, CacheOptions } from '../cache';
+
 export interface TickspotRole {
     subscription_id: number;
     company: string;
@@ -56,22 +58,24 @@ export interface TickspotTimeEntry {
 }
 
 export class TickspotApi {
+
+
     readonly API_DOMAIN = 'https://www.tickspot.com';
     readonly API_PATH = '/api/v2/';
     readonly USER_AGENT = 'Tikkle'
 
-    protected cache = new Map<string, Promise<any>>();
+    protected cache = Cache.create();
 
     constructor(protected readonly role?: TickspotRole,
         protected readonly username?: string) { }
 
-    protected request<T>(method: 'GET' | 'POST' | 'PUT', path: string, data?: any): Promise<T> {
+    protected async request<T>(method: 'GET' | 'POST' | 'PUT', path: string, data?: any, cacheOptions?: CacheOptions): Promise<T> {
         if (!this.role) {
             throw new Error('Role configuration required');
         }
-        const key = `${method}${path}`;
-        if(method !== 'GET' || !this.cache.has(key)) {
-            this.cache.set(key, Axios.request<T>({
+        const key = `TICKSPOT_${method}${path}`;
+        if(method !== 'GET' || !this.cache.has(key, cacheOptions)) {
+            const result = await Axios.request<T>({
                 method,
                 url: `${this.API_DOMAIN}/${this.role.subscription_id}${this.API_PATH}${path}`,
                 headers: {
@@ -79,16 +83,20 @@ export class TickspotApi {
                     'User-Agent': `${this.USER_AGENT} <${this.username}>`
                 },
                 data
-            }).then(r => r.data));
+            }).then(r => r.data);
+            if(method === 'GET') {
+                this.cache.set(key, result, cacheOptions);
+            }
+            return result;
         }
-        return this.cache.get(key)!;
+        return this.cache.get<T>(key)!;
     }
 
     getClients(): Promise<TickspotClient[]> {
         return this.request<TickspotClient[]>('GET', 'clients.json');
     }
 
-    getClient(clientId: string | number) : Promise<TickspotClient> {
+    getClient(clientId: string | number, ) : Promise<TickspotClient> {
         return this.request<TickspotClient>('GET', `clients/${clientId}.json`);
     }
 
@@ -123,7 +131,7 @@ export class TickspotApi {
             start_date: start instanceof Date ? start.toISOString() : start,
             end_date: end instanceof Date ? end.toISOString() : end
         })
-        return this.request<TickspotTimeEntry[]>('GET', `entries.json?${query}`);
+        return this.request<TickspotTimeEntry[]>('GET', `entries.json?${query}`, undefined, { mode: 'never' });
     }
 
     createEntry(entry : { date: string, hours: number; notes: string, task_id: number }) : Promise<{}> {
