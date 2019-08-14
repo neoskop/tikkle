@@ -31,7 +31,7 @@ export class ToggleApi {
 
     }
 
-    protected request<T>(method: 'GET' | 'POST', path: string, data?: any): Promise<T> {
+    protected request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, data?: any): Promise<T> {
         return Axios.request<T>({
             method,
             url: `${this.API_URL}${path}`,
@@ -51,12 +51,20 @@ export class ToggleApi {
         return this.request<ToggleClient[]>('GET', 'clients')
     }
 
-     getClientProjects(clientId: string | number) : Promise<ToggleProject[]|null>{
+    getClientProjects(clientId: string | number) : Promise<ToggleProject[]|null>{
         return this.request<ToggleProject[]>('GET', `clients/${clientId}/projects`);
     }
 
-    async createClient({ name, wid = this.wid }: { name: string, wid?: number }) : Promise<ToggleClient> {
-        return (await this.request<ToggleResponse<ToggleClient>>('POST', 'clients', { client: { name, wid } })).data;
+    async deleteProject(projectId: string | number) : Promise<void> {
+        await this.request('DELETE', `projects/${projectId}`);
+    }
+
+    async deleteClient(clientId: string | number) : Promise<void> {
+        await this.request('DELETE', `clients/${clientId}`);
+    }
+
+    async createClient({ name, notes, wid = this.wid }: { name: string, notes?: string; wid?: number }) : Promise<ToggleClient> {
+        return (await this.request<ToggleResponse<ToggleClient>>('POST', 'clients', { client: { name, notes, wid } })).data;
     }
 
     async createProject({ name, wid = this.wid, cid }: { name: string, wid?: number, cid: number }) : Promise<ToggleProject> {

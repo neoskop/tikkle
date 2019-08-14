@@ -6,9 +6,9 @@ import { ToggleApi } from '../apis/toggle.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
-export class Setup implements ICommand {
-    readonly command = 'setup';
-    readonly description = 'Setup tikkle';
+export class Clear implements ICommand {
+    readonly command = 'clear';
+    readonly description = 'Clear all Tikkle entries in Toggle';
 
     constructor(protected readonly config: Configuration) { }
 
@@ -29,12 +29,12 @@ export class Setup implements ICommand {
             const projects = projectIds.map(id => tickspotProjects.get(id)!);
 
             let toggleClient = toggleClients.find(c => c.name === client.name);
-            if (!toggleClient) {
-                console.log(Colors.green('✓'), Colors.bold('Client Project'), client.name)
-                toggleClient = await toggle.createClient({ name: client.name, notes: '@Tikkle' });
-            } else {
-                console.log(Colors.yellow('↷'), Colors.bold('Client Project'), client.name)
+
+            if(!toggleClient) {
+                continue;
             }
+
+            console.log(Colors.bold('Client Project'), client.name)
 
             for (const project of projects) {               
                 const tickspotTasks = await tickspot.getProjectTasks(project.id);
@@ -43,13 +43,21 @@ export class Setup implements ICommand {
                 for (const tickspotTask of tickspotTasks) {
                     const toggleProjectName = `${project.name} // ${tickspotTask.name}`;
                     let toggleProject = toggleProjects.find(p => p.name === toggleProjectName);
-                    if (!toggleProject) {
-                        console.log(' ', Colors.green('✓'), toggleProjectName)
-                        toggleProject = await toggle.createProject({ name: toggleProjectName, cid: toggleClient.id });
+                    if (toggleProject) {
+                        await toggle.deleteProject(toggleProject.id);
+                        console.log(' ', Colors.green('X'), toggleProjectName)
                     } else {
-                        console.log(' ', Colors.yellow('↷'), toggleProjectName)
+                        console.log(' ', Colors.red('?'), toggleProjectName)
                     }
                 }
+            }
+
+            console.log();
+            if(toggleClient.notes && toggleClient.notes.startsWith('@Tikkle')) {
+                await toggle.deleteClient(toggleClient.id);
+                console.log(' ', Colors.green('X'), Colors.bold('Client'), toggleClient.name)
+            } else {
+                console.log(' ', Colors.yellow('↷'), Colors.bold('Client'), toggleClient.name)
             }
         }
     }
