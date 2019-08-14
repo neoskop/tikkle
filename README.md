@@ -4,8 +4,15 @@ The missing link between tickspot and toggl
 
 ## Usage
 
-`tikkle init` to enter/update credentials and client/project selection.  
-`tikkle setup` to create the clients/projects in Toggl.  
+`tikkle init` Enter/update credentials and client/project selection.  
+`tikkle setup` Create the clients/projects in Toggl.  
+`tikkle clear` Remove created clients and projects from Toggl.
+`tikkle sync <range>` Sync the given time range from Toggl to Tickspot.  
+`tikkle cache clear` Clear the local tikkle cache.
+
+### Time Range
+
+A valid time range is either `today` or `yesterday`, a single date in the format `YYYY-MM-DD` or date range in the format `YYYY-MM-DD..YYYY-MM-DD`.
 
 ## Testing
 
