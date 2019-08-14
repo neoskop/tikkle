@@ -1,7 +1,7 @@
 {
   "name": "@neoskop/tikkle",
   "version": "0.1.0",
-  "description": "The missing link between tickspot and toggle",
+  "description": "The missing link between tickspot and toggl",
   "repository": {
     "type": "git",
     "url": "https://github.com/neoskop/tikkle"

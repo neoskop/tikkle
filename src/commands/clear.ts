@@ -2,13 +2,13 @@ import * as Colors from 'colors/safe';
 import { Argv } from 'yargs';
 
 import { TickspotApi } from '../apis/tickspot.api';
-import { ToggleApi } from '../apis/toggle.api';
+import { TogglApi } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
 export class Clear implements ICommand {
     readonly command = 'clear';
-    readonly description = 'Clear all Tikkle entries in Toggle';
+    readonly description = 'Clear all Tikkle entries in Toggl';
 
     constructor(protected readonly config: Configuration) { }
 
@@ -18,19 +18,19 @@ export class Clear implements ICommand {
 
     async run(_args: {}, config: IConfiguration) {
         const tickspot = new TickspotApi(config.tickspot.role, config.tickspot.username);
-        const toggle = new ToggleApi(config.toggle.token, config.toggle.workspace);
+        const toggl = new TogglApi(config.toggl.token, config.toggl.workspace);
 
         const tickspotClients = new Map((await Promise.all(config.tickspot.clients.map(([id]) => tickspot.getClient(id)))).map(client => [client.id.toString(), client]));
-        const toggleClients = await toggle.getClients();
+        const togglClients = await toggl.getClients();
         const tickspotProjects = new Map((await tickspot.getProjects()).map(project => [project.id.toString(), project]));
 
         for (const [clientId, projectIds] of config.tickspot.clients) {
             const client = tickspotClients.get(clientId)!;
             const projects = projectIds.map(id => tickspotProjects.get(id)!);
 
-            let toggleClient = toggleClients.find(c => c.name === client.name);
+            let togglClient = togglClients.find(c => c.name === client.name);
 
-            if(!toggleClient) {
+            if(!togglClient) {
                 continue;
             }
 
@@ -38,26 +38,26 @@ export class Clear implements ICommand {
 
             for (const project of projects) {               
                 const tickspotTasks = await tickspot.getProjectTasks(project.id);
-                const toggleProjects = (await toggle.getClientProjects(toggleClient.id)) || [];
+                const togglProjects = (await toggl.getClientProjects(togglClient.id)) || [];
 
                 for (const tickspotTask of tickspotTasks) {
-                    const toggleProjectName = `${project.name} // ${tickspotTask.name}`;
-                    let toggleProject = toggleProjects.find(p => p.name === toggleProjectName);
-                    if (toggleProject) {
-                        await toggle.deleteProject(toggleProject.id);
-                        console.log(' ', Colors.green('X'), toggleProjectName)
+                    const togglProjectName = `${project.name} // ${tickspotTask.name}`;
+                    let togglProject = togglProjects.find(p => p.name === togglProjectName);
+                    if (togglProject) {
+                        await toggl.deleteProject(togglProject.id);
+                        console.log(' ', Colors.green('X'), togglProjectName)
                     } else {
-                        console.log(' ', Colors.red('?'), toggleProjectName)
+                        console.log(' ', Colors.red('?'), togglProjectName)
                     }
                 }
             }
 
             console.log();
-            if(toggleClient.notes && toggleClient.notes.startsWith('@Tikkle')) {
-                await toggle.deleteClient(toggleClient.id);
-                console.log(' ', Colors.green('X'), Colors.bold('Client'), toggleClient.name)
+            if(togglClient.notes && togglClient.notes.startsWith('@Tikkle')) {
+                await toggl.deleteClient(togglClient.id);
+                console.log(' ', Colors.green('X'), Colors.bold('Client'), togglClient.name)
             } else {
-                console.log(' ', Colors.yellow('↷'), Colors.bold('Client'), toggleClient.name)
+                console.log(' ', Colors.yellow('↷'), Colors.bold('Client'), togglClient.name)
             }
         }
     }

@@ -2,14 +2,14 @@ import { Argv, Arguments } from 'yargs';
 import * as Colors from 'colors/safe';
 
 import { TickspotApi, TickspotClient, TickspotProject, TickspotTask } from '../apis/tickspot.api';
-import { ToggleApi, ToggleProject, ToggleTimeEntry, ToggleClient } from '../apis/toggle.api';
+import { TogglApi, TogglProject, TogglTimeEntry, TogglClient } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
 interface MappedTimeEntry {
-    entry: ToggleTimeEntry;
-    toggleClient: ToggleClient;
-    toggleProject: ToggleProject;
+    entry: TogglTimeEntry;
+    togglClient: TogglClient;
+    togglProject: TogglProject;
     tickspotClient: TickspotClient;
     tickspotProject: TickspotProject;
     tickspotTask: TickspotTask
@@ -17,7 +17,7 @@ interface MappedTimeEntry {
 
 export class Sync implements ICommand<{ range: string }> {
     readonly command = 'sync <range>';
-    readonly description = 'Sync all Tikkle entries in Toggle';
+    readonly description = 'Sync all Tikkle entries in Toggl';
 
     constructor(protected readonly config: Configuration) { }
 
@@ -57,7 +57,7 @@ export class Sync implements ICommand<{ range: string }> {
         end.setDate(end.getDate() + 1);
 
         const tickspot = new TickspotApi(config.tickspot.role, config.tickspot.username);
-        const toggle = new ToggleApi(config.toggle.token, config.toggle.workspace);
+        const toggl = new TogglApi(config.toggl.token, config.toggl.workspace);
 
         const tickspotClients: TickspotClient[] = [];
         const tickspotProjects: TickspotProject[] = [];
@@ -76,43 +76,43 @@ export class Sync implements ICommand<{ range: string }> {
         const tickspotProjectsByName = new Map(tickspotProjects.map(project => [project.name, project]));
         const tickspotTasksByName = new Map(tickspotTasks.map(task => [task.name, task]));
 
-        const toggleClients = (await toggle.getClients()).filter(client => tickspotClientsByName.has(client.name));
-        const toggleClientsById = new Map(toggleClients.map(client => [client.id, client]));
+        const togglClients = (await toggl.getClients()).filter(client => tickspotClientsByName.has(client.name));
+        const togglClientsById = new Map(togglClients.map(client => [client.id, client]));
 
-        const toggleProjects: ToggleProject[] = [];
+        const togglProjects: TogglProject[] = [];
 
-        for (const client of toggleClients) {
-            toggleProjects.push(...((await toggle.getClientProjects(client.id)) || []).filter(project => {
+        for (const client of togglClients) {
+            togglProjects.push(...((await toggl.getClientProjects(client.id)) || []).filter(project => {
                 const [name] = project.name.split(/ \/\/ /);
                 return tickspotProjectsByName.has(name);
             }));
         }
 
-        const toggleProjectsById = new Map(toggleProjects.map(project => [project.id, project]));
+        const togglProjectsById = new Map(togglProjects.map(project => [project.id, project]));
 
         const existingTimeEntries = await tickspot.getTimeEntries({ start, end });
 
-        const timeEntries = (await toggle.getTimeEntries({ start, end })).map(entry => {
+        const timeEntries = (await toggl.getTimeEntries({ start, end })).map(entry => {
             if (!entry.pid) {
                 return false;
             }
 
-            const toggleProject = toggleProjectsById.get(entry.pid);
-            if (!toggleProject) return false;
-            const toggleClient = toggleClientsById.get(toggleProject.cid);
-            if (!toggleClient) return false;
+            const togglProject = togglProjectsById.get(entry.pid);
+            if (!togglProject) return false;
+            const togglClient = togglClientsById.get(togglProject.cid);
+            if (!togglClient) return false;
 
-            const [projectName, taskName] = toggleProject.name.split(/ \/\/ /);
+            const [projectName, taskName] = togglProject.name.split(/ \/\/ /);
 
-            const tickspotClient = tickspotClientsByName.get(toggleClient.name);
+            const tickspotClient = tickspotClientsByName.get(togglClient.name);
             const tickspotProject = tickspotProjectsByName.get(projectName);
             const tickspotTask = tickspotTasksByName.get(taskName);
             if (!tickspotClient || !tickspotProject || !tickspotTask) return;
 
             return {
                 entry,
-                toggleClient,
-                toggleProject,
+                togglClient,
+                togglProject,
                 tickspotClient,
                 tickspotProject,
                 tickspotTask

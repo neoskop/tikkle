@@ -2,7 +2,7 @@ import * as prompts from 'prompts';
 import { Argv } from 'yargs';
 
 import { TickspotApi, TickspotRole } from '../apis/tickspot.api';
-import { ToggleApi } from '../apis/toggle.api';
+import { TogglApi } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
@@ -64,8 +64,8 @@ export class Init implements ICommand {
         }
     }
 
-    protected async getToggleWorkspace(token: string): Promise<number> {
-        const workspaces = await new ToggleApi(token).getWorkspaces();
+    protected async getTogglWorkspace(token: string): Promise<number> {
+        const workspaces = await new TogglApi(token).getWorkspaces();
 
         if (workspaces.length === 1) {
             return workspaces[0].id;
@@ -73,7 +73,7 @@ export class Init implements ICommand {
 
         const { workspace } = await prompts({
             name: 'workspace',
-            message: 'Toggle Workspace',
+            message: 'Toggl Workspace',
             type: 'select',
             choices: workspaces.map(ws => ({ title: ws.name, value: ws.id.toString() }))
         });
@@ -112,16 +112,16 @@ export class Init implements ICommand {
 
         const { token } = await prompts({
             name: 'token',
-            message: 'Toggle API Token',
+            message: 'Toggl API Token',
             type: 'text',
-            initial: config && config.toggle.token
+            initial: config && config.toggl.token
         });
 
         if (!token) {
             throw new Error('SKIP INPUT');
         }
 
-        const workspace = await this.getToggleWorkspace(token);
+        const workspace = await this.getTogglWorkspace(token);
 
         const availableClients = await new TickspotApi(role, username).getClients();
         const availableProjects = await new TickspotApi(role, username).getProjects();
@@ -153,7 +153,7 @@ export class Init implements ICommand {
                 clients,
                 username
             },
-            toggle: {
+            toggl: {
                 token,
                 workspace
             },

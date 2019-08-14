@@ -9,7 +9,7 @@ export interface IConfiguration {
         username: string;
         clients: [ string, string[] ][];
     };
-    toggle: {
+    toggl: {
         token: string;
         workspace: number;
     };
