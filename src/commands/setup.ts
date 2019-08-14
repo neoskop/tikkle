@@ -5,6 +5,7 @@ import { TickspotApi } from '../apis/tickspot.api';
 import { TogglApi } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
+import { Cache } from '../cache';
 
 export class Setup implements ICommand {
     readonly command = 'setup';
@@ -17,6 +18,7 @@ export class Setup implements ICommand {
     }
 
     async run(_args: {}, config: IConfiguration) {
+        Cache.create().clear();
         const tickspot = new TickspotApi(config.tickspot.role, config.tickspot.username);
         const toggl = new TogglApi(config.toggl.token, config.toggl.workspace);
 
@@ -52,5 +54,6 @@ export class Setup implements ICommand {
                 }
             }
         }
+        Cache.create().clear();
     }
 }
