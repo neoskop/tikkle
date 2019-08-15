@@ -126,11 +126,17 @@ export class Init implements ICommand {
         const availableClients = await new TickspotApi(role, username).getClients();
         const availableProjects = await new TickspotApi(role, username).getProjects();
 
+        const selectedClientsMap = new Map(config ? config.tickspot.clients.map(([ id, projects ]) => [ id, new Set(projects) ]) : []);
+
         const { clients: selectedClients } = await prompts({
             name: 'clients',
             message: 'Clients',
             type: 'multiselect',
-            choices: availableClients.filter(client => !client.archive).map(client => ({ title: client.name, value: client.id.toString() })),
+            choices: availableClients.filter(client => !client.archive).map(client => ({ 
+                title: client.name, 
+                value: client.id.toString(),
+                selected: selectedClientsMap.has(client.id.toString())
+            })),
         });
 
         const clients: [string, string[]][] = [];
@@ -141,7 +147,11 @@ export class Init implements ICommand {
                 name: 'projects',
                 message: `${client.name}-Projects`,
                 type: 'multiselect',
-                choices: availableProjects.filter(project => project.date_closed === null && project.client_id === client.id).map(project => ({ title: project.name, value: project.id.toString() }))
+                choices: availableProjects.filter(project => project.date_closed === null && project.client_id === client.id).map(project => ({ 
+                    title: project.name, 
+                    value: project.id.toString(),
+                    selected: selectedClientsMap.has(clientId) && selectedClientsMap.get(clientId)!.has(project.id.toString())
+                 }))
             });
 
             clients.push([clientId, projects]);
