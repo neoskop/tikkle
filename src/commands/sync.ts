@@ -21,10 +21,12 @@ export class Sync implements ICommand<{ range: string }> {
 
     constructor(protected readonly config: Configuration) { }
 
-    declareArguments(args: Argv<{ range: string }>): Argv {
+    declareArguments(args: Argv): Argv<{ range: string }> {
         return args.positional('range', {
-            description: 'A date(YYYY-MM-DD), a date range(YYYY-MM-DD..YYYY-MM-DD), "today" or "yesterday"'
-        });
+            description: 'A date(YYYY-MM-DD), a date range(YYYY-MM-DD..YYYY-MM-DD), "today" or "yesterday"',
+            required: true,
+            type: 'string'
+        }) as Argv<{ range: string }>;
     }
 
     async run({ range } : Arguments<{ range: string }>, config: IConfiguration) {

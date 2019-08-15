@@ -13,7 +13,7 @@ export class Setup implements ICommand {
 
     constructor(protected readonly config: Configuration) { }
 
-    declareArguments(args: Argv<{}>): Argv {
+    declareArguments(args: Argv): Argv {
         return args;
     }
 

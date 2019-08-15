@@ -11,16 +11,17 @@ export class Cache implements ICommand<{ command: 'clear' }> {
 
     constructor(protected readonly config: Configuration) { }
 
-    declareArguments(args: Argv<{ command: 'clear' }>): Argv {
+    declareArguments(args: Argv): Argv<{ command: 'clear' }> {
         return args.positional('command', {
-            description: 'A command for the cache, currently only "clear" is supported.'
-        });
+            description: 'A command for the cache, currently only "clear" is supported.',
+            required: true,
+            choices: [ 'clear' ]
+        }) as Argv<{ command: 'clear' }>;
     }
 
     async run({ command } : Arguments<{ command: 'clear' }>) {
         switch(command) {
             case 'clear':
-            default:
                 _Cache.create().clear();
                 console.log('Cache cleared');
         }

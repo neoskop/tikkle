@@ -7,20 +7,21 @@ import { Purge } from './commands/purge';
 import { Setup } from './commands/setup';
 import { Sync } from './commands/sync';
 import { Configuration } from './configuration';
+import { Arguments } from 'yargs';
 
 const config = new Configuration();
 const setup = new Setup(config);
 const init = new Init(config);
-const clear = new Purge(config);
+const purge = new Purge(config);
 const sync = new Sync(config);
 const cache = new Cache(config);
 
 
 yargs.command(init.command, init.description, args => init.declareArguments(args), args => run(init, args));
 yargs.command(setup.command, setup.description, args => setup.declareArguments(args), args => run(setup, args));
-yargs.command(clear.command, clear.description, args => clear.declareArguments(args), args => run(clear, args));
-yargs.command(sync.command, sync.description, args => sync.declareArguments(args as any), args => run(sync, args));
-yargs.command(cache.command, cache.description, args => cache.declareArguments(args as any), args => run(cache, args));
+yargs.command(purge.command, purge.description, args => purge.declareArguments(args), args => run(purge, args));
+yargs.command(sync.command, sync.description, args => sync.declareArguments(args), args => run(sync, args));
+yargs.command(cache.command, cache.description, args => cache.declareArguments(args), args => run(cache, args));
 
 export async function main() {
     const notifier = new UpdateNotifier({ pkg: require('../package') });
@@ -38,7 +39,7 @@ export async function main() {
     }
 }
 
-async function run(cmd: ICommand<any>, args: any) {
+async function run<T>(cmd: ICommand<T>, args: Arguments<T>) {
     if (!(await config.exists())) {
         return
     }
