@@ -24,7 +24,7 @@ export class Init implements ICommand {
         });
 
         const api = new TickspotApi();
-        const roles = await api.roles(username, password);
+        const roles = await api.getRoles(username, password);
 
         if (roles.length > 1) {
             const { roleToken } = await prompts({

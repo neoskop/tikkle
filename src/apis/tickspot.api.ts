@@ -112,7 +112,7 @@ export class TickspotApi {
         return this.request<TickspotTask[]>('GET', `projects/${projectId}/tasks.json`)
     }
 
-    async roles(username: string, password: string): Promise<TickspotRole[]> {
+    async getRoles(username: string, password: string): Promise<TickspotRole[]> {
         return Axios.request<TickspotRole[]>({
             method: 'GET',
             url: `${this.API_DOMAIN}${this.API_PATH}roles.json`,
