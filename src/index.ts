@@ -8,6 +8,7 @@ import { Setup } from './commands/setup';
 import { Sync } from './commands/sync';
 import { Configuration } from './configuration';
 import { Arguments } from 'yargs';
+import { Configure } from './commands/configure';
 
 const config = new Configuration();
 const setup = new Setup(config);
@@ -15,6 +16,7 @@ const init = new Init(config);
 const purge = new Purge(config);
 const sync = new Sync(config);
 const cache = new Cache(config);
+const configure = new Configure(config);
 
 
 yargs.command(init.command, init.description, args => init.declareArguments(args), args => run(init, args));
@@ -22,6 +24,7 @@ yargs.command(setup.command, setup.description, args => setup.declareArguments(a
 yargs.command(purge.command, purge.description, args => purge.declareArguments(args), args => run(purge, args));
 yargs.command(sync.command, sync.description, args => sync.declareArguments(args), args => run(sync, args));
 yargs.command(cache.command, cache.description, args => cache.declareArguments(args), args => run(cache, args));
+yargs.command(configure.command, configure.description, args => configure.declareArguments(args), args => run(configure, args));
 
 export async function main() {
     const notifier = new UpdateNotifier({ pkg: require('../package') });

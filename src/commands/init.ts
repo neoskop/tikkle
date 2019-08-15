@@ -157,9 +157,9 @@ export class Init implements ICommand {
                 token,
                 workspace
             },
-            settings: {
+            settings: config && config.settings || {
                 rounding: 900,
-                roundUpBy: .333
+                roundUpBy: .33
             }
         }
 
