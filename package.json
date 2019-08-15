@@ -34,6 +34,7 @@
     "@types/jest": "24.0.17",
     "@types/js-yaml": "3.12.1",
     "@types/prompts": "2.0.1",
+    "@types/update-notifier": "2.5.0",
     "@types/yargs": "13.0.2",
     "coveralls": "3.0.6",
     "jest": "24.8.0",
@@ -52,6 +53,7 @@
     "prompts": "2.2.1",
     "rxjs": "6.5.2",
     "tslib": "1.10.0",
+    "update-notifier": "3.0.1",
     "yargs": "13.3.0"
   }
 }
