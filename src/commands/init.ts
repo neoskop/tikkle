@@ -5,6 +5,7 @@ import { TickspotApi, TickspotRole } from '../apis/tickspot.api';
 import { TogglApi } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
+import { Cache } from '../cache';
 
 export class Init implements ICommand {
     readonly command = 'init';
@@ -123,8 +124,13 @@ export class Init implements ICommand {
 
         const workspace = await this.getTogglWorkspace(token);
 
-        const availableClients = await new TickspotApi(role, username).getClients();
-        const availableProjects = await new TickspotApi(role, username).getProjects();
+        const tickspot = new TickspotApi(role, username);
+
+        Cache.create().clear();
+        const [ availableClients, availableProjects ] = await Promise.all([
+            tickspot.getAllClients(),
+            tickspot.getAllProjects()
+        ])
 
         const selectedClientsMap = new Map(config ? config.tickspot.clients.map(([ id, projects ]) => [ id, new Set(projects) ]) : []);
 
@@ -138,6 +144,8 @@ export class Init implements ICommand {
                 selected: selectedClientsMap.has(client.id.toString())
             })),
         });
+
+        if(!selectedClients) throw new Error('SKIP INPUT');
 
         const clients: [string, string[]][] = [];
 
@@ -153,6 +161,8 @@ export class Init implements ICommand {
                     selected: selectedClientsMap.has(clientId) && selectedClientsMap.get(clientId)!.has(project.id.toString())
                  }))
             });
+
+            if(!projects) throw new Error('SKIP INPUT');
 
             clients.push([clientId, projects]);
         }

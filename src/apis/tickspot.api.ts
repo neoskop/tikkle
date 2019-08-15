@@ -92,16 +92,44 @@ export class TickspotApi {
         return this.cache.get<T>(key)!;
     }
 
-    getClients(): Promise<TickspotClient[]> {
-        return this.request<TickspotClient[]>('GET', 'clients.json');
+    getClients({ page } : { page?: number } = {}): Promise<TickspotClient[]> {
+        return this.request<TickspotClient[]>('GET', `clients.json?page=${page || 1}`);
+    }
+
+    async getAllClients() : Promise<TickspotClient[]> {
+        const result : TickspotClient[] = [];
+        let page = 1;
+        while(true) {
+            const clients = await this.getClients({ page });
+            ++page;
+            result.push(...clients);
+            if(clients.length < 100) {
+                break;
+            }
+        }
+        return result;
     }
 
     getClient(clientId: string | number, ) : Promise<TickspotClient> {
         return this.request<TickspotClient>('GET', `clients/${clientId}.json`);
     }
 
-    getProjects(): Promise<TickspotProject[]> {
-        return this.request<TickspotProject[]>('GET', 'projects.json');
+    getProjects({ page } : { page?: number } = {}): Promise<TickspotProject[]> {
+        return this.request<TickspotProject[]>('GET', `projects.json?page=${page || 1}`);
+    }
+
+    async getAllProjects() : Promise<TickspotProject[]> {
+        const result : TickspotProject[] = [];
+        let page = 1;
+        while(true) {
+            const projects = await this.getProjects({ page });
+            ++page;
+            result.push(...projects);
+            if(projects.length < 100) {
+                break;
+            }
+        }
+        return result;
     }
 
     getProject(projectId: string | number) : Promise<TickspotProject> {
