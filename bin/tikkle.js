@@ -1,3 +1,6 @@
 #!/usr/bin/env node
 
-require("../dist");
+require("../dist").main().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
