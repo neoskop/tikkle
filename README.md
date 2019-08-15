@@ -6,7 +6,7 @@ The missing link between tickspot and toggl
 
 `tikkle init` Enter/update credentials and client/project selection.  
 `tikkle setup` Create the clients/projects in Toggl.  
-`tikkle clear` Remove created clients and projects from Toggl.  
+`tikkle purge` Remove created clients and projects from Toggl.  
 `tikkle sync <range>` Sync the given time range from Toggl to Tickspot.  
 `tikkle cache clear` Clear the local tikkle cache.
 

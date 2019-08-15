@@ -2,7 +2,7 @@ import * as yargs from 'yargs';
 import { Setup } from './commands/setup';
 import { Configuration } from './configuration';
 import { Init } from './commands/init';
-import { Clear } from './commands/clear';
+import { Purge } from './commands/purge';
 import { Sync } from './commands/sync';
 import { Cache } from './commands/cache';
 import { ICommand } from './commands/interface';
@@ -11,7 +11,7 @@ import { ICommand } from './commands/interface';
 const config = new Configuration();
 const setup = new Setup(config);
 const init = new Init(config);
-const clear = new Clear(config);
+const clear = new Purge(config);
 const sync = new Sync(config);
 const cache = new Cache(config);
 

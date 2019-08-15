@@ -6,9 +6,9 @@ import { TogglApi } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
-export class Clear implements ICommand {
-    readonly command = 'clear';
-    readonly description = 'Clear all Tikkle entries in Toggl';
+export class Purge implements ICommand {
+    readonly command = 'purge';
+    readonly description = 'Purge all Tikkle entries in Toggl';
 
     constructor(protected readonly config: Configuration) { }
 
