@@ -156,9 +156,9 @@ export class TickspotApi {
 
     getTimeEntries({ start, end } : { start?: string|Date, end?: string|Date } = {}) : Promise<TickspotTimeEntry[]> {
         const query = qs.stringify({
-            start_date: start instanceof Date ? start.toISOString() : start,
-            end_date: end instanceof Date ? end.toISOString() : end
-        })
+            start_date: start instanceof Date ? toDate(start) : start,
+            end_date: end instanceof Date ? toDate(end) : end
+        });
         return this.request<TickspotTimeEntry[]>('GET', `entries.json?${query}`, undefined, { mode: 'never' });
     }
 
@@ -169,4 +169,8 @@ export class TickspotApi {
     updateEntry(id: string|number, entry : { date: string, hours: number; notes: string, task_id: number }) : Promise<{}> {
         return this.request('PUT', `entries/${id}.json`, entry);
     }
+}
+
+function toDate(date : Date) {
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
 }

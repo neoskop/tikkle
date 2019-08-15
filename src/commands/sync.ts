@@ -39,6 +39,7 @@ export class Sync implements ICommand<{ range: string }> {
             start = new Date();
             end = new Date();
             start.setDate(start.getDate() - 1);
+            end.setDate(end.getDate() - 1);
         } else if(/^\d{4}-\d{2}-\d{2}$/.test(range)) {
             start = new Date(range);
             end = new Date(range);
@@ -54,9 +55,8 @@ export class Sync implements ICommand<{ range: string }> {
             throw new Error(`Invalid date "${range}"`)
         }
 
-        setMidnight(start);
-        setMidnight(end);
-        end.setDate(end.getDate() + 1);
+        setStart(start);
+        setEnd(end);
 
         const tickspot = new TickspotApi(config.tickspot.role, config.tickspot.username);
         const toggl = new TogglApi(config.toggl.token, config.toggl.workspace);
@@ -122,6 +122,7 @@ export class Sync implements ICommand<{ range: string }> {
         }).filter((entry): entry is MappedTimeEntry => false !== entry);
 
         const map = timeEntries.reduce((m, c) => {
+            if(!c.entry.stop) return m;
             const key = `${c.entry.pid}-${c.entry.description}`;
             if (m.has(key)) {
                 m.get(key)!.push(c);
@@ -191,9 +192,15 @@ export class Sync implements ICommand<{ range: string }> {
     }
 }
 
-function setMidnight(date : Date) {
+function setStart(date : Date) {
     date.setHours(0);
     date.setMinutes(0);
     date.setSeconds(0);
     date.setMilliseconds(0);
+}
+function setEnd(date : Date) {
+    date.setHours(23);
+    date.setMinutes(59);
+    date.setSeconds(59);
+    date.setMilliseconds(999);
 }
