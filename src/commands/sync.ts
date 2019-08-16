@@ -149,8 +149,8 @@ export class Sync implements ICommand<{ range: string }> {
             const notes = [ '@Tikkle' ];
 
             if(config.settings.grouping) {
-                notes.push(...entry.map(({ entry }) => entry.description).filter((c, i, a) => a.indexOf(c) === i))
-            } else {
+                notes.push(...entry.map(({ entry }) => entry.description).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i))
+            } else if(entry[0].entry.description) {
                 notes.push(entry[0].entry.description);
             }
             
