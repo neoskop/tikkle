@@ -15,7 +15,8 @@ export interface IConfiguration {
     };
     settings: {
         rounding: number;
-        roundUpBy: number
+        roundUpBy: number;
+        grouping: boolean;
     }
 }
 

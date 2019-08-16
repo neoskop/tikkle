@@ -123,7 +123,7 @@ export class Sync implements ICommand<{ range: string }> {
 
         const map = timeEntries.reduce((m, c) => {
             if(!c.entry.stop) return m;
-            const key = `${c.entry.pid}-${c.entry.description}`;
+            const key = config.settings.grouping ? c.entry.pid!.toString() : `${c.entry.pid}-${c.entry.description}`;
             if (m.has(key)) {
                 m.get(key)!.push(c);
             } else {
@@ -145,12 +145,20 @@ export class Sync implements ICommand<{ range: string }> {
             }
 
             const date = new Date(entry[0].entry.stop);
+
+            const notes = [ '@Tikkle' ];
+
+            if(config.settings.grouping) {
+                notes.push(...entry.map(({ entry }) => entry.description).filter((c, i, a) => a.indexOf(c) === i))
+            } else {
+                notes.push(entry[0].entry.description);
+            }
             
             const tickspotEntry = {
                 date: `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
                 hours: duration / 3600,
                 task_id: entry[0].tickspotTask.id,
-                notes: `@Tikkle\n${entry[0].entry.description}`
+                notes: notes.join('\n')
             }
 
             const existingTimeEntry = existingTimeEntries.find(e => e.task_id === tickspotEntry.task_id && e.notes.replace(/\r\n/g, '\n') === tickspotEntry.notes);
@@ -164,7 +172,7 @@ export class Sync implements ICommand<{ range: string }> {
                     Colors.bold(entry[0].tickspotProject.name),
                     '>',
                     Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`added '${Colors.white(entry[0].entry.description)}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
+                    Colors.gray(`added '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
                 )
             } else if(existingTimeEntry.hours !== tickspotEntry.hours) {
                 await tickspot.updateEntry(existingTimeEntry.id, tickspotEntry);
@@ -175,7 +183,7 @@ export class Sync implements ICommand<{ range: string }> {
                     Colors.bold(entry[0].tickspotProject.name),
                     '>',
                     Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`updated '${Colors.white(entry[0].entry.description)}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
+                    Colors.gray(`updated '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
                 )
             } else {
                 console.log(
@@ -185,7 +193,7 @@ export class Sync implements ICommand<{ range: string }> {
                     Colors.bold(entry[0].tickspotProject.name),
                     '>',
                     Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`no changes in '${Colors.white(entry[0].entry.description)}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
+                    Colors.gray(`no changes in '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
                 )
             }
         }

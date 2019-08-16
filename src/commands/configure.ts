@@ -23,7 +23,8 @@ export class Configure implements ICommand {
                 choices: [
                     { title: 'Exit', value: 'exit' },
                     { title: 'Round To', value: 'rounding' },
-                    { title: 'Round Up By', value: 'roundUpBy' }
+                    { title: 'Round Up By', value: 'roundUpBy' },
+                    { title: 'Grouping', value: 'grouping' }
                 ]
             });
 
@@ -59,6 +60,21 @@ export class Configure implements ICommand {
                     } else {
                         return
                     }
+                    break;
+                case 'grouping':
+                    const { grouping } = await prompts({
+                        name: 'grouping',
+                        message: 'Group Time Entries by Task',
+                        type: 'toggle',
+                        initial: config.settings.grouping
+                    });
+                    if(grouping != null) {
+                        config.settings.grouping = grouping;
+                        this.config.write(config);
+                    } else {
+                        return
+                    }
+                    break;
             }
         }
     }

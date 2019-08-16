@@ -179,7 +179,8 @@ export class Init implements ICommand {
             },
             settings: config && config.settings || {
                 rounding: 900,
-                roundUpBy: .33
+                roundUpBy: .33,
+                grouping: false
             }
         }
 
