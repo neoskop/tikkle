@@ -136,7 +136,9 @@ export class Sync implements ICommand<{ range: string }> {
 
         const map = timeEntries.reduce((m, c) => {
             if (!c.entry.stop) return m;
-            const key = config.settings.grouping ? c.entry.pid!.toString() : `${c.entry.pid}-${c.entry.description}`;
+            const date = new Date(c.entry.stop);
+            const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            const key = config.settings.grouping ? `${c.entry.pid}-${dateStr}` : `${c.entry.pid}-${dateStr}-${c.entry.description}`;
             if (m.has(key)) {
                 m.get(key)!.push(c);
             } else {
