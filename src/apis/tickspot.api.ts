@@ -46,15 +46,15 @@ export interface TickspotTask {
 }
 
 export interface TickspotTimeEntry {
-    id: string;
+    id?: string;
     date: string;
     hours: number;
     notes: string;
     task_id: number;
-    user_id: number;
-    url: string;
-    created_at: string;
-    updated_at: string;
+    user_id?: number;
+    url?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export class TickspotApi {

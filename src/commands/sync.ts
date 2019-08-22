@@ -1,8 +1,8 @@
-import { Argv, Arguments } from 'yargs';
 import * as Colors from 'colors/safe';
+import { Arguments, Argv } from 'yargs';
 
 import { TickspotApi, TickspotClient, TickspotProject, TickspotTask } from '../apis/tickspot.api';
-import { TogglApi, TogglProject, TogglTimeEntry, TogglClient } from '../apis/toggl.api';
+import { TogglApi, TogglClient, TogglProject, TogglTimeEntry } from '../apis/toggl.api';
 import { Configuration, IConfiguration } from '../configuration';
 import { ICommand } from './interface';
 
@@ -147,7 +147,9 @@ export class Sync implements ICommand<{ range: string }> {
             return m;
         }, new Map<string, [MappedTimeEntry]>());
 
-        for (const entry of map.values()) {
+        const RAW_ENTRY = Symbol('RAW_ENTRY');
+
+        const tickspotEntries = [ ...map.values() ].map(entry => {
             let duration = entry.reduce((t, c) => t + c.entry.duration, 0);
 
             const mod = duration % config.settings.rounding;
@@ -169,49 +171,128 @@ export class Sync implements ICommand<{ range: string }> {
                 notes.push(entry[0].entry.description);
             }
 
-            const tickspotEntry = {
+            return {
+                [RAW_ENTRY]: entry,
                 date: `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
                 hours: duration / 3600,
                 task_id: entry[0].tickspotTask.id,
                 notes: notes.join('\n')
             }
-
-            const existingTimeEntry = existingTimeEntries.find(e => e.task_id === tickspotEntry.task_id && e.notes.replace(/\r\n/g, '\n') === tickspotEntry.notes);
-
-            if (!existingTimeEntry) {
-                await tickspot.createEntry(tickspotEntry);
-                console.log(
-                    Colors.green('✓'),
-                    Colors.bold(entry[0].tickspotClient.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotProject.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`added '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
-                )
-            } else if (existingTimeEntry.hours !== tickspotEntry.hours) {
-                await tickspot.updateEntry(existingTimeEntry.id, tickspotEntry);
-                console.log(
-                    Colors.green('↺'),
-                    Colors.bold(entry[0].tickspotClient.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotProject.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`updated '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
-                )
-            } else {
-                console.log(
-                    Colors.yellow('↷'),
-                    Colors.bold(entry[0].tickspotClient.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotProject.name),
-                    '>',
-                    Colors.bold(entry[0].tickspotTask.name),
-                    Colors.gray(`no changes in '${Colors.white(notes.slice(1).join(', '))}' with ${Colors.cyan(tickspotEntry.hours.toFixed(2))} hours at ${Colors.cyan(tickspotEntry.date)}`)
-                )
+        }).sort((a, b) => {
+            if(a.date !== b.date) {
+                return a.date.localeCompare(b.date);
             }
+            if(a[RAW_ENTRY][0].tickspotClient.name !== b[RAW_ENTRY][0].tickspotClient.name) {
+                return a[RAW_ENTRY][0].tickspotClient.name.localeCompare(b[RAW_ENTRY][0].tickspotClient.name)
+            }
+            if(a[RAW_ENTRY][0].tickspotProject.name !== b[RAW_ENTRY][0].tickspotProject.name) {
+                return a[RAW_ENTRY][0].tickspotProject.name.localeCompare(b[RAW_ENTRY][0].tickspotProject.name)
+            }
+            if(a[RAW_ENTRY][0].tickspotTask.name !== b[RAW_ENTRY][0].tickspotTask.name) {
+                return a[RAW_ENTRY][0].tickspotTask.name.localeCompare(b[RAW_ENTRY][0].tickspotTask.name)
+            }
+
+            return a[RAW_ENTRY][0].entry.stop.localeCompare(b[RAW_ENTRY][0].entry.stop);
+        });
+
+        const maxClientLength = tickspotEntries.reduce((max, { [RAW_ENTRY]: entry }) => Math.max(max, entry[0].tickspotClient.name.length), 0);
+        const maxProjectLength = tickspotEntries.reduce((max, { [RAW_ENTRY]: entry }) => Math.max(max, entry[0].tickspotProject.name.length), 0);
+        const maxTaskLength = tickspotEntries.reduce((max, { [RAW_ENTRY]: entry }) => Math.max(max, entry[0].tickspotTask.name.length), 0);
+
+        let latestDate: string|undefined;
+        let latestClient: string|undefined;
+        let latestProject: string|undefined;
+        let latestTask: string|undefined;
+
+        let sumHours = 0;
+        let sumHoursPerDay = 0;
+
+        if(tickspotEntries.length) {
+            console.log();
+            console.log('', Colors.yellow('↷'), 'No changes', Colors.green('✓'), 'Added', Colors.green('↺'), 'Updated');
+            console.log();
+            console.log(
+                Colors.bold(Colors.bgWhite(Colors.black('Date'.padEnd(10)))),
+                Colors.bold(Colors.bgWhite(Colors.black('Client'.padEnd(maxClientLength)))),
+                Colors.bold(Colors.bgWhite(Colors.black('Project'.padEnd(maxProjectLength)))),
+                Colors.bold(Colors.bgWhite(Colors.black('Task'.padEnd(maxTaskLength)))),
+                Colors.bold(Colors.bgWhite(Colors.black('Hours'))),
+                Colors.bold(Colors.bgWhite(Colors.black('Description'.padEnd(30))))
+            )
         }
+
+        for(const entry of tickspotEntries) {
+            const date = entry.date === latestDate ? '' : entry.date;
+            const clientName = !date && entry[RAW_ENTRY][0].tickspotClient.name === latestClient ? '' : entry[RAW_ENTRY][0].tickspotClient.name; 
+            const projectName = !clientName && entry[RAW_ENTRY][0].tickspotProject.name === latestProject ? '' : entry[RAW_ENTRY][0].tickspotProject.name; 
+            const taskName = !projectName && entry[RAW_ENTRY][0].tickspotTask.name === latestTask ? '' : entry[RAW_ENTRY][0].tickspotTask.name;
+
+            if(date && latestDate != null) {
+                process.stdout.write(Colors.bold(`${latestDate} Total `.padStart(10 + maxClientLength + maxProjectLength + maxTaskLength + 4)));
+                process.stdout.write(Colors.bold(`${Colors.cyan(sumHoursPerDay.toFixed(2).padStart(5))}\n`));
+                console.log();
+                sumHoursPerDay = 0;
+            }
+
+            const existingTimeEntry = existingTimeEntries.find(e => e.date.substr(0, 10) === entry.date.substr(0, 10) && e.task_id === entry.task_id && e.notes.replace(/\r\n/g, '\n') === entry.notes);
+
+            let mode : 'add' | 'update' | 'skip' = 'skip';
+
+            if(!existingTimeEntry) {
+                mode = 'add';
+            } else if(existingTimeEntry.hours !== entry.hours) {
+                mode = 'update';
+            }
+
+            process.stdout.write([
+                date.padEnd(10), 
+                clientName.padEnd(maxClientLength), 
+                projectName.padEnd(maxProjectLength),
+                taskName.padEnd(maxTaskLength),
+                `${Colors.cyan(entry.hours.toFixed(2).padStart(5))}`,
+                Colors.white(entry.notes.split(/\n/).slice(1).join(', ')),
+                mode !== 'skip' ? Colors.gray('⚙') : Colors.yellow('↷'),
+                mode !== 'skip' ? '\r' : '\n'
+            ].join(' '))
+
+            switch(mode) {
+                case 'add':
+                    await tickspot.createEntry(entry);
+                    break;
+                case 'update':
+                    await tickspot.updateEntry(existingTimeEntry!.id!, entry);
+            }
+
+            sumHours += entry.hours;
+            sumHoursPerDay += entry.hours;
+
+            if(mode !== 'skip') {
+                process.stdout.write([
+                    date.padEnd(10), 
+                    clientName.padEnd(maxClientLength), 
+                    projectName.padEnd(maxProjectLength),
+                    taskName.padEnd(maxTaskLength),
+                    `${Colors.cyan(entry.hours.toFixed(2).padStart(5))}`,
+                    Colors.white(entry.notes.split(/\n/).slice(1).join(', ')),
+                    mode !== 'add' ? Colors.green('✓') : Colors.green('↺'),
+                    '\n'
+                ].join(' '))
+            }
+
+            latestDate = entry.date;
+            latestClient = entry[RAW_ENTRY][0].tickspotClient.name; 
+            latestProject = entry[RAW_ENTRY][0].tickspotProject.name; 
+            latestTask = entry[RAW_ENTRY][0].tickspotTask.name;
+        }
+
+        if(latestDate) {
+            process.stdout.write(Colors.bold(`${latestDate} Total `.padStart(10 + maxClientLength + maxProjectLength + maxTaskLength + 4)));
+            process.stdout.write(Colors.bold(`${Colors.cyan(sumHoursPerDay.toFixed(2).padStart(5))}\n`));
+        }
+
+        console.log();
+        process.stdout.write(Colors.bold('Tatal '.padStart(10 + maxClientLength + maxProjectLength + maxTaskLength + 4)));
+        process.stdout.write(Colors.bold(`${Colors.cyan(sumHours.toFixed(2).padStart(5))}\n`));
     }
 }
 
