@@ -20,6 +20,7 @@ export interface TogglProject {
     cid: number;
     wid: number;
     name: string;
+    active?: boolean;
 }
 
 export interface TogglTimeEntry {
@@ -49,7 +50,7 @@ export class TogglApi {
 
     }
 
-    protected async request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, data?: any, cacheOptions?: CacheOptions): Promise<T> {
+    protected async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, data?: any, cacheOptions?: CacheOptions): Promise<T> {
         const key = `TOGGL_${method}${path}`;
         if (method !== 'GET' || !this.cache.has(key, cacheOptions)) {
             const result = await Axios.request<T>({
@@ -105,7 +106,15 @@ export class TogglApi {
         return (await this.request<TogglResponse<TogglClient>>('POST', 'clients', { client: { name, notes, wid } })).data;
     }
 
-    async createProject({ name, wid = this.wid, cid }: { name: string, wid?: number, cid: number }): Promise<TogglProject> {
-        return (await this.request<TogglResponse<TogglProject>>('POST', 'projects', { project: { name, wid, cid } })).data;
+    async updateClient(id: string|number, { name, notes, wid = this.wid }: { name: string, notes?: string; wid?: number }): Promise<TogglClient> {
+        return (await this.request<TogglResponse<TogglClient>>('PUT', `clients/${id}`, { client: { name, notes, wid } })).data;
+    }
+
+    async createProject({ name, wid = this.wid, cid, active }: { name: string, wid?: number, cid: number, active?: boolean }): Promise<TogglProject> {
+        return (await this.request<TogglResponse<TogglProject>>('POST', 'projects', { project: { name, wid, cid, active } })).data;
+    }
+
+    async updateProject(id: string|number, { name, wid = this.wid, cid, active }: { name: string, wid?: number, cid: number, active?: boolean }): Promise<TogglProject> {
+        return (await this.request<TogglResponse<TogglProject>>('PUT', `projects/${id}`, { project: { name, wid, cid, active } })).data;
     }
 }

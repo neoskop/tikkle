@@ -17,6 +17,10 @@ export interface IConfiguration {
         rounding: number;
         roundUpBy: number;
         grouping: boolean;
+    };
+    mapping?: {
+        clients: [ number, number ][];
+        projects: [ number, number ][];
     }
 }
 
