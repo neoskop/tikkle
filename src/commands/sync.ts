@@ -27,13 +27,15 @@ export class Sync implements ICommand<{ range: string }> {
 
     declareArguments(args: Argv): Argv<{ range: string }> {
         return (args.positional('range', {
-            description: 'A date(YYYY-MM-DD), a date range(YYYY-MM-DD..YYYY-MM-DD), "today" or "yesterday"',
+            description: 'A date(YYYY-MM-DD), a date range(YYYY-MM-DD..YYYY-MM-DD), "today", "yesterday", "week" or "month"',
             required: true,
             default: 'today',
             type: 'string'
         }) as Argv<{ range: string }>).check(args => {
             if (!(args.range === 'today'
                 || args.range === 'yesterday'
+                || args.range === 'week'
+                || args.range === 'month'
                 || DATE_REGEXP.test(args.range)
                 || DATE_RANGE_REGEXP.test(args.range))) {
                 throw new Error('Invalid date range')
@@ -45,14 +47,25 @@ export class Sync implements ICommand<{ range: string }> {
     async run({ range }: Arguments<{ range: string }>, config: IConfiguration) {
         let start: Date;
         let end: Date;
-        if (range.toLowerCase() === 'today') {
+        if (range === 'today') {
             start = new Date();
             end = new Date();
-        } else if (range.toLowerCase() === 'yesterday') {
+        } else if (range === 'yesterday') {
             start = new Date();
             end = new Date();
             start.setDate(start.getDate() - 1);
             end.setDate(end.getDate() - 1);
+        } else if(range === 'week') {
+            start = new Date();
+            start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+            end = new Date(start);
+            end.setDate(end.getDate() + 6);
+        } else if(range === 'month') {
+            start = new Date();
+            end = new Date();
+            start.setDate(1);
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
         } else if (DATE_REGEXP.test(range)) {
             start = new Date(range);
             end = new Date(range);
@@ -137,7 +150,7 @@ export class Sync implements ICommand<{ range: string }> {
         const map = timeEntries.reduce((m, c) => {
             if (!c.entry.stop) return m;
             const date = new Date(c.entry.stop);
-            const dateStr = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            const dateStr = formatDate(date);
             const key = config.settings.grouping ? `${c.entry.pid}-${dateStr}` : `${c.entry.pid}-${dateStr}-${c.entry.description}`;
             if (m.has(key)) {
                 m.get(key)!.push(c);
@@ -173,7 +186,7 @@ export class Sync implements ICommand<{ range: string }> {
 
             return {
                 [RAW_ENTRY]: entry,
-                date: `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`,
+                date: formatDate(date),
                 hours: duration / 3600,
                 task_id: entry[0].tickspotTask.id,
                 notes: notes.join('\n')
@@ -208,6 +221,12 @@ export class Sync implements ICommand<{ range: string }> {
         let sumHoursPerDay = 0;
 
         if(tickspotEntries.length) {
+            console.log();
+            if(formatDate(start) === formatDate(end)) {
+                console.log('', Colors.bold(`Sync:`), formatDate(start));
+            } else {
+                console.log('', Colors.bold(`Sync:`), formatDate(start), '-', formatDate(end));
+            }
             console.log();
             console.log('', Colors.yellow('↷'), 'No changes', Colors.green('✓'), 'Added', Colors.green('↺'), 'Updated');
             console.log();
@@ -307,4 +326,8 @@ function setEnd(date: Date) {
     date.setMinutes(59);
     date.setSeconds(59);
     date.setMilliseconds(999);
+}
+
+function formatDate(date: Date) {
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 }
