@@ -310,7 +310,7 @@ export class Sync implements ICommand<{ range: string }> {
         }
 
         console.log();
-        process.stdout.write(Colors.bold('Tatal '.padStart(10 + maxClientLength + maxProjectLength + maxTaskLength + 4)));
+        process.stdout.write(Colors.bold('Total '.padStart(10 + maxClientLength + maxProjectLength + maxTaskLength + 4)));
         process.stdout.write(Colors.bold(`${Colors.cyan(sumHours.toFixed(2).padStart(5))}\n`));
     }
 }
