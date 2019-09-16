@@ -36,7 +36,7 @@ export class Setup implements ICommand<{ verbose: boolean }> {
 
         for (const [clientId, projectIds] of config.tickspot.clients) {
             const client = tickspotClients.get(clientId)!;
-            const projects = projectIds.map(id => tickspotProjects.get(id)!);
+            const projects = projectIds.map(id => tickspotProjects.get(id)!).filter(Boolean);
 
             let togglClient = config.mapping ? togglClients.find(c => c.id === clientMapping.get(client.id)) : togglClients.find(c => c.name === client.name);
             if (!togglClient) {
