@@ -36,7 +36,7 @@ export async function main() {
     if (!(await config.exists())) {
         await init.run(yargs.argv);
         console.log();
-        await setup.run(yargs.argv, await config.read());
+        await setup.run({ verbose: false }, await config.read());
     } else if (!args._[0]) {
         yargs.showHelp();
     }
