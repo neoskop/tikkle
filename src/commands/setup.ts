@@ -55,7 +55,7 @@ export class Setup implements ICommand {
 
                 for (const tickspotTask of tickspotTasks) {
                     const togglProjectName = `${project.name} // ${tickspotTask.name}`;
-                    let togglProject = config.mapping ? togglProjects.find(p => p.id === projectMapping.get(tickspotTask.id)) : togglProjects.find(p => p.name === togglProjectName);
+                    let togglProject = config.mapping ? togglProjects.find(p => p.id === projectMapping.get(tickspotTask.id)) : togglProjects.find(p => p.name === togglProjectName && p.cid === togglClient!.id);
                     const active = !client.archive && !project.date_closed && !tickspotTask.date_closed;
                     if (!togglProject) {
                         console.log(' ', Colors.green('✓'), togglProjectName);
