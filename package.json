@@ -1,6 +1,6 @@
 {
   "name": "@neoskop/tikkle",
-  "version": "0.7.0",
+  "version": "0.7.1-rc.0",
   "description": "The missing link between tickspot and toggl",
   "repository": {
     "type": "git",
