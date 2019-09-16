@@ -21,6 +21,7 @@ export interface IConfiguration {
     mapping?: {
         clients: [ number, number ][];
         projects: [ number, number ][];
+        tasks: [ number, number ][];
     }
 }
 

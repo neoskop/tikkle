@@ -45,6 +45,10 @@ export class Sync implements ICommand<{ range: string }> {
     }
 
     async run({ range }: Arguments<{ range: string }>, config: IConfiguration) {
+        if(!config.mapping || !config.mapping.clients || !config.mapping.projects || !config.mapping.tasks) {
+            throw new Error('Mapping missing. Run `tikkle setup` to generate the mapping.');
+        }
+
         let start: Date;
         let end: Date;
         if (range === 'today') {
@@ -100,19 +104,22 @@ export class Sync implements ICommand<{ range: string }> {
             tickspotTasks.push(...await tickspot.getProjectTasks(project.id));
         }
 
-        const tickspotClientsByName = new Map(tickspotClients.map(client => [client.name, client]));
-        const tickspotProjectsByName = new Map(tickspotProjects.map(project => [project.name, project]));
-        const tickspotTasksByName = new Map(tickspotTasks.map(task => [task.name, task]));
+        const reverseClientMapping = new Map(config.mapping.clients.map(([ a, b ]) => [ b, a ]));
+        const reverseProjectMapping = new Map(config.mapping.projects.map(([ a, b ]) => [ b, a ]));
+        const reverseTaskMapping = new Map(config.mapping.tasks.map(([ a, b ]) => [ b, a ]));
 
-        const togglClients = (await toggl.getClients()).filter(client => tickspotClientsByName.has(client.name));
+        const tickspotClientsById = new Map(tickspotClients.map(client => [client.id, client]));
+        const tickspotProjectsById = new Map(tickspotProjects.map(project => [project.id, project]));
+        const tickspotTasksById = new Map(tickspotTasks.map(task => [task.id, task]));
+
+        const togglClients = (await toggl.getClients()).filter(client => reverseClientMapping.has(client.id));
         const togglClientsById = new Map(togglClients.map(client => [client.id, client]));
 
         const togglProjects: TogglProject[] = [];
 
         for (const client of togglClients) {
             togglProjects.push(...((await toggl.getClientProjects(client.id)) || []).filter(project => {
-                const [name] = project.name.split(/ \/\/ /);
-                return tickspotProjectsByName.has(name);
+                return reverseProjectMapping.has(project.id);
             }));
         }
 
@@ -130,11 +137,9 @@ export class Sync implements ICommand<{ range: string }> {
             const togglClient = togglClientsById.get(togglProject.cid);
             if (!togglClient) return false;
 
-            const [projectName, taskName] = togglProject.name.split(/ \/\/ /);
-
-            const tickspotClient = tickspotClientsByName.get(togglClient.name);
-            const tickspotProject = tickspotProjectsByName.get(projectName);
-            const tickspotTask = tickspotTasksByName.get(taskName);
+            const tickspotClient = tickspotClientsById.get(reverseClientMapping.get(togglClient.id)!);
+            const tickspotProject = tickspotProjectsById.get(reverseProjectMapping.get(togglProject.id)!);
+            const tickspotTask = tickspotTasksById.get(reverseTaskMapping.get(togglProject.id)!);
             if (!tickspotClient || !tickspotProject || !tickspotTask) return;
 
             return {
