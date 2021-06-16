@@ -44,7 +44,7 @@ interface TogglResponse<T> {
 export class TogglApi {
     protected cache = Cache.create();
 
-    readonly API_URL = 'https://www.toggl.com/api/v8/';
+    readonly API_URL = 'https://api.track.toggl.com/api/v8/';
 
     constructor(protected readonly token: string, protected readonly wid?: number) {
 
