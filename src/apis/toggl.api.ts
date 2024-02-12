@@ -1,18 +1,20 @@
 import Axios from 'axios';
 import * as qs from 'querystring';
 import { Cache, CacheOptions } from '../cache';
+import assert from 'node:assert';
 
 export interface TogglClient {
     id: number;
     wid: number;
     name: string;
-    notes: string;
+    // notes: string;
     at: string;
 }
 
 export interface TogglWorkspace {
-    name: string;
     id: number;
+    name: string;
+    organization_id: number;
 }
 
 export interface TogglProject {
@@ -21,6 +23,7 @@ export interface TogglProject {
     wid: number;
     name: string;
     active?: boolean;
+    client_ids?: number[];
 }
 
 export interface TogglTimeEntry {
@@ -37,16 +40,20 @@ export interface TogglTimeEntry {
     duronly: boolean;
 }
 
-interface TogglResponse<T> {
-    data: T;
+export interface ToggleMe {
+    workspaces: TogglWorkspace[]
 }
+
+// interface TogglResponse<T> {
+//     data: T;
+// }
 
 export class TogglApi {
     protected cache = Cache.create();
 
-    readonly API_URL = 'https://api.track.toggl.com/api/v8/';
+    readonly API_URL = 'https://api.track.toggl.com/api/v9/';
 
-    constructor(protected readonly token: string, protected readonly wid?: number) {
+    constructor(protected readonly token: string, protected readonly workspaceId?: number) {
 
     }
 
@@ -70,28 +77,41 @@ export class TogglApi {
         return this.cache.get<T>(key)!;
     }
 
-    getWorkspaces(): Promise<TogglWorkspace[]> {
-        return this.request<TogglWorkspace[]>('GET', 'workspaces');
+    me(): Promise<ToggleMe> {
+        return this.request<ToggleMe>('GET', 'me?with_related_data=true');
     }
+
+    // getWorkspaces(): Promise<TogglWorkspace[]> {
+    //     return this.request<TogglWorkspace[]>('GET', 'workspaces');
+    // }
 
     getClients(): Promise<TogglClient[]> {
-        return this.request<TogglClient[]>('GET', 'clients')
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return this.request<TogglClient[]>('GET', `workspaces/${this.workspaceId}/clients`)
     }
 
-    getClientProjects(clientId: string | number): Promise<TogglProject[] | null> {
-        return this.request<TogglProject[]>('GET', `clients/${clientId}/projects`);
+    async getClientProjects(clientId: number): Promise<TogglProject[] | null> {
+        
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        const projects = await this.request<TogglProject[]>('GET', `workspaces/${this.workspaceId}/projects?client_ids=${clientId}`);
+        return projects;
+
+        return projects.filter(p => p.client_ids?.includes(clientId))
     }
 
     getProjects(): Promise<TogglProject[]> {
-        return this.request<TogglProject[]>('GET', 'projects');
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return this.request<TogglProject[]>('GET', `workspaces/${this.workspaceId}/projects`);
     }
 
     async deleteProject(projectId: string | number): Promise<void> {
-        await this.request('DELETE', `projects/${projectId}`);
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        await this.request('DELETE', `workspaces/${this.workspaceId}/projects/${projectId}`);
     }
 
     async deleteClient(clientId: string | number): Promise<void> {
-        await this.request('DELETE', `clients/${clientId}`);
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        await this.request('DELETE', `workspaces/${this.workspaceId}/clients/${clientId}`);
     }
 
     getTimeEntries({ start, end }: { start?: string | Date, end?: string | Date } = {}): Promise<TogglTimeEntry[]> {
@@ -99,22 +119,26 @@ export class TogglApi {
             start_date: start instanceof Date ? start.toISOString() : start,
             end_date: end instanceof Date ? end.toISOString() : end
         })
-        return this.request<TogglTimeEntry[]>('GET', `time_entries?${query}`, undefined, { mode: 'never' });
+        return this.request<TogglTimeEntry[]>('GET', `me/time_entries?${query}`, undefined, { mode: 'never' });
     }
 
-    async createClient({ name, notes, wid = this.wid }: { name: string, notes?: string; wid?: number }): Promise<TogglClient> {
-        return (await this.request<TogglResponse<TogglClient>>('POST', 'clients', { client: { name, notes, wid } })).data;
+    async createClient({ name, wid = this.workspaceId }: { name: string, wid?: number }): Promise<TogglClient> {
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return await this.request<TogglClient>('POST', `workspaces/${this.workspaceId}/clients`, { name, wid });
     }
 
-    async updateClient(id: string|number, { name, notes, wid = this.wid }: { name: string, notes?: string; wid?: number }): Promise<TogglClient> {
-        return (await this.request<TogglResponse<TogglClient>>('PUT', `clients/${id}`, { client: { name, notes, wid } })).data;
+    async updateClient(id: string|number, { name, wid = this.workspaceId }: { name: string, notes?: string; wid?: number }): Promise<TogglClient> {
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return await this.request<TogglClient>('PUT', `workspaces/${this.workspaceId}/clients/${id}`, { name, wid });
     }
 
-    async createProject({ name, wid = this.wid, cid, active }: { name: string, wid?: number, cid: number, active?: boolean }): Promise<TogglProject> {
-        return (await this.request<TogglResponse<TogglProject>>('POST', 'projects', { project: { name, wid, cid, active } })).data;
+    async createProject({ name, client_id, active }: { name: string, client_id: number, active?: boolean }): Promise<TogglProject> {
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return await this.request<TogglProject>('POST', `workspaces/${this.workspaceId}/projects`, { name, client_id, active });
     }
 
-    async updateProject(id: string|number, { name, wid = this.wid, cid, active }: { name: string, wid?: number, cid: number, active?: boolean }): Promise<TogglProject> {
-        return (await this.request<TogglResponse<TogglProject>>('PUT', `projects/${id}`, { project: { name, wid, cid, active } })).data;
+    async updateProject(id: string|number, { name, client_id, active }: { name: string, client_id: number, active?: boolean }): Promise<TogglProject> {
+        assert(this.workspaceId, 'workspaceId must be set, run "tikkle init" to fix this');
+        return await this.request<TogglProject>('PUT', `workspaces/${this.workspaceId}/projects/${id}`, { name, client_id, active });
     }
 }

@@ -1,4 +1,4 @@
-import * as Colors from 'colors/safe';
+import Colors from 'colors/safe';
 import { Argv } from 'yargs';
 
 import { TickspotApi } from '../apis/tickspot.api';
@@ -41,7 +41,7 @@ export class Setup implements ICommand<{ verbose: boolean }> {
 
             let togglClient = config.mapping ? togglClients.find(c => c.id === clientMapping.get(client.id)) : togglClients.find(c => c.name === client.name);
             if (!togglClient) {
-                togglClient = await toggl.createClient({ name: client.name, notes: '@Tikkle' });
+                togglClient = await toggl.createClient({ name: client.name });
                 console.log(Colors.green('✓'), Colors.bold('Client Project'), client.name, verbose ? Colors.gray(`(Tickspot: ${client.id}, Toggl: ${togglClient.id})`) : '')
                 clientMapping.set(client.id, togglClient.id);
             } else if(client.name !== togglClient.name) {
@@ -61,10 +61,11 @@ export class Setup implements ICommand<{ verbose: boolean }> {
 
                 for (const tickspotTask of tickspotTasks) {
                     const togglProjectName = `${project.name} // ${tickspotTask.name}`;
-                    let togglProject = config.mapping ? togglProjects.find(p => p.id === taskMapping.get(tickspotTask.id)) : togglProjects.find(p => p.name === togglProjectName && p.cid === togglClient!.id);
+                    let togglProject =  config.mapping ? togglProjects.find(p => p.id === taskMapping.get(tickspotTask.id)) :  togglProjects.find(p => p.name === togglProjectName && p.cid === togglClient!.id);
                     const active = !client.archive && !project.date_closed && !tickspotTask.date_closed;
                     if (!togglProject) {
-                        togglProject = await toggl.createProject({ name: togglProjectName, cid: togglClient.id });
+                        togglProject = await toggl.createProject({ name: togglProjectName, active, client_id: togglClient.id });
+                        console.log(togglProject);
                         console.log(' ', Colors.green('✓'), togglProjectName, verbose ? Colors.gray(`(Tickspot: ${tickspotTask.id}, Toggl: ${togglProject.id})`) : '');
                         projectMapping.push([ tickspotTask.project_id, togglProject.id ]);
                         taskMapping.set(tickspotTask.id, togglProject.id);
@@ -72,7 +73,11 @@ export class Setup implements ICommand<{ verbose: boolean }> {
                         console.log(' ', Colors.green('↺'), togglProjectName, verbose ? Colors.gray(`(Tickspot: ${tickspotTask.id}, Toggl: ${togglProject.id})`) : '')
                         togglProject.name = togglProjectName;
                         togglProject.active = !client.archive && active
-                        togglProject = await toggl.updateProject(togglProject.id, togglProject);
+                        togglProject = await toggl.updateProject(togglProject.id, {
+                            name: togglProject.name,
+                            active: togglProject.active,
+                            client_id: togglClient.id
+                        });
                     } else {
                         if(!config.mapping) {
                             projectMapping.push([ tickspotTask.project_id, togglProject.id ]);

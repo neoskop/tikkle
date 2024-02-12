@@ -37,7 +37,7 @@ export class Configuration {
     async read() : Promise<IConfiguration> {
         const file = await fs.readFile(this.getFilePath(), 'utf8');
 
-        return YAML.safeLoad(file) as IConfiguration;
+        return YAML.load(file) as IConfiguration;
     }
 
     async write(config : IConfiguration) : Promise<void> {

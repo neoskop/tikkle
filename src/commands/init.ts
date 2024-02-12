@@ -1,4 +1,4 @@
-import * as prompts from 'prompts';
+import prompts from 'prompts';
 import { Argv } from 'yargs';
 
 import { TickspotApi, TickspotRole } from '../apis/tickspot.api';
@@ -65,21 +65,21 @@ export class Init implements ICommand {
         }
     }
 
-    protected async getTogglWorkspace(token: string): Promise<number> {
-        const workspaces = await new TogglApi(token).getWorkspaces();
+    protected async getTogglWorkspace(token: string): Promise<{ workspaceId: number }> {
+        const {workspaces} = await new TogglApi(token).me();
 
         if (workspaces.length === 1) {
-            return workspaces[0].id;
+            return { workspaceId: workspaces[0].id };
         }
 
         const { workspace } = await prompts({
             name: 'workspace',
             message: 'Toggl Workspace',
             type: 'select',
-            choices: workspaces.map(ws => ({ title: ws.name, value: ws.id.toString() }))
+            choices: workspaces.map(ws => ({ title: ws.name, value: JSON.stringify({ workspaceId: ws.id }) }))
         });
 
-        return +workspace;
+        return JSON.parse(workspace);
     }
 
     async run(_args: {}, config?: IConfiguration) {
@@ -122,7 +122,8 @@ export class Init implements ICommand {
             throw new Error('SKIP INPUT');
         }
 
-        const workspace = await this.getTogglWorkspace(token);
+
+        const { workspaceId } = await this.getTogglWorkspace(token);
 
         const tickspot = new TickspotApi(role, username);
 
@@ -175,7 +176,7 @@ export class Init implements ICommand {
             },
             toggl: {
                 token,
-                workspace
+                workspace: workspaceId
             },
             settings: config && config.settings || {
                 rounding: 900,

@@ -1,4 +1,4 @@
-import * as Colors from 'colors/safe';
+import Colors from 'colors/safe';
 import { Arguments, Argv } from 'yargs';
 
 import { TickspotApi, TickspotClient, TickspotProject, TickspotTask } from '../apis/tickspot.api';
